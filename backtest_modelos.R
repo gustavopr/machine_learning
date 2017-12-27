@@ -5,7 +5,7 @@ rm(list=ls())
 
 start_time = Sys.time()
 
-# importa base de dados, funÁıes e library
+# importa base de dados, fun√ß√µes e library
 library(glmnet)
 library(xlsx)
 library(randomForest)
@@ -28,11 +28,10 @@ aux = embed(BRinf,2)
 y = aux[,1]
 x = aux[,-1]
 
-# par‚metros
+# par√¢metros
 n = dim(x)[1]
 m = dim(x)[2]
 janela = 5*12
-fim = n - 1
 models = c('Ridge', 'Lasso', 'adaLasso', 'CSR', 'Random Forest')
 qtd_h = 12
 
@@ -46,37 +45,37 @@ colnames(ea) = models
 
 # loop backtest
 for (i in 1:qtd_h) {
-  for (j in (janela+1):(fim-i+1)) {
-    y.in = y[(j-janela-1+i-1):(j-i)]; y.out=y[j]
-    x.in = x[(j-janela-1+i-1):(j-i),]; x.out=x[j,]
+  for (j in (janela+1):(n-i+1)) {
+    y.in = y[(j-janela):(j-1)]; y.out=y[j+i-1]
+    x.in = x[(j-janela):(j-1),]; x.out=x[j,]
     
     # ridge
     model_ridge = ic.glmnet(x.in,y.in,crit = "bic",alpha=0)
     pred[j, 'Ridge', i] = predict(model_ridge,newdata=x.out)
-    ea[j, 'Ridge', i]   = abs(y[j] - pred[j, 'Ridge', i]) * 1000
+    ea[j, 'Ridge', i]   = abs(y.out - pred[j, 'Ridge', i]) * 1000
 
     # lasso
     model_lasso = ic.glmnet(x.in,y.in,crit = "bic")
     pred[j, 'Lasso', i] = predict(model_lasso,newdata=x.out)
-    ea[j, 'Lasso', i]         = abs(y[j] - pred[j, 'Lasso', i]) * 1000
+    ea[j, 'Lasso', i]         = abs(y.out - pred[j, 'Lasso', i]) * 1000
 
-    # # ada-lasso
+    # ada-lasso
     tau=1
     first.step.coef=coef(model_lasso)[-1]
     penalty.factor=abs(first.step.coef+1/sqrt(nrow(x)))^(-tau)
     model_adalasso=ic.glmnet(x.in,y.in,crit="bic",penalty.factor=penalty.factor)
     pred[j, 'adaLasso', i] = predict(model_adalasso,newdata=x.out)
-    ea[j, 'adaLasso', i]      = abs(y[j] - pred[j, 'adaLasso', i]) * 1000
+    ea[j, 'adaLasso', i]      = abs(y.out - pred[j, 'adaLasso', i]) * 1000
 
     # csr
     model_csr = csr(x.in,y.in,K=20,k=4,fixed.controls = 1)
     pred[j, 'CSR', i] = predict(model_csr,newdata=x.out)
-    ea[j, 'CSR', i]           = abs(y[j] - pred[j, 'CSR', i]) * 1000
+    ea[j, 'CSR', i]           = abs(y.out - pred[j, 'CSR', i]) * 1000
 
-    # # random forest
+    # random forest
     model_rf = randomForest(x=x.in, y=y.in)
     pred[j, 'Random Forest', i] = predict(model_rf,newdata=x.out)
-    ea[j, 'Random Forest', i] = abs(y[j] - pred[j, 'Random Forest', i]) * 1000
+    ea[j, 'Random Forest', i] = abs(y.out - pred[j, 'Random Forest', i]) * 1000
 
   }
 }
@@ -84,9 +83,9 @@ for (i in 1:qtd_h) {
 end_time = Sys.time()
 time_dif = end_time - start_time
 
-# erro absoluto mÈdio
+# erro absoluto m√©dio
 eam = colMeans(ea, na.rm = TRUE)
 
-# gr·ficos
-barplot(eam, ylab = "Erro Absoluto MÈdio", xlab = "Modelo")
-boxplot(ea[,,1])
+# gr√°ficos
+barplot(eam, ylab = "Erro Absoluto M√©dio", xlab = "Modelo")
+boxplot(ea[,,3])
